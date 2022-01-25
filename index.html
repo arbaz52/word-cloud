@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      body {
+        margin: unset;
+      }
+
+      #wrapper {
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        position: relative;
+      }
+      p {
+        margin: unset;
+        width: 4px;
+        height: 4px;
+        background: blue;
+      }
+      #hidden {
+        width: 0;
+        height: 0;
+        /* visibility: hidden; */
+        color: transparent;
+        overflow: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="hidden"></div>
+    <div id="wrapper"></div>
+    <script>
+      const words =
+        `Lorem ipsum dolor sit amet consectetur adipisicing elit. Facere, dolor sunt
+    aut nulla eos odio. Consectetur nemo optio vero sint.`.split(" ");
+      const frequency = Array(words.length)
+        .fill(10)
+        .map((el) => Math.random() * 100);
+
+      // utils
+      const map = (val, cMin, cMax, tMin, tMax) => {
+        const slope = (tMax - tMin) / (cMax - cMin);
+        return tMin + slope * (val - cMin);
+      };
+
+      const isOverlapping = (rect1, rect2) =>
+        !(
+          rect1.right < rect2.left ||
+          rect1.left > rect2.right ||
+          rect1.bottom < rect2.top ||
+          rect1.top > rect2.bottom
+        );
+
+      const maxFontSize = 62;
+      const minFontSize = 18;
+
+      const maxFrequency = Math.max(...frequency);
+      const minFrequency = Math.min(...frequency);
+
+      const els = [];
+
+      const { width, height } = wrapper.getBoundingClientRect();
+
+      for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        const el = document.createElement("span");
+        el.innerText = word;
+        el.style.top = "50%";
+        el.style.left = "50%";
+        el.style.position = "absolute";
+        el.style.fontSize =
+          map(
+            frequency[i],
+            minFrequency,
+            maxFrequency,
+            minFontSize,
+            maxFontSize
+          ) + "px";
+
+        el.style.transform = `translate(-50%, -50%)`;
+        el.style.paddingInline = "4px";
+
+        hidden.appendChild(el);
+
+        if (els.length) {
+          let radius = 0;
+          for (let i = 0; i < 3_000; i++) {
+            const y = Math.sin(i);
+            const x = Math.cos(i) * 2;
+            const top = height / 2 + radius * y;
+            const left = width / 2 + radius * x;
+
+            const p = document.createElement("p");
+
+            el.style.top = `${top}px`;
+            el.style.left = `${left}px`;
+            const rect = el.getBoundingClientRect();
+
+            p.style.top = top + "px";
+            p.style.left = left + "px";
+            p.style.position = "absolute";
+            // wrapper.appendChild(p);
+            radius += 1;
+
+            let overlapping = false;
+            for (const existingEl of els) {
+              const rect1 = existingEl.getBoundingClientRect();
+
+              overlapping = isOverlapping(rect, rect1);
+              if (overlapping) break;
+            }
+            if (!overlapping) {
+              el.style.top = `${top}px`;
+              el.style.left = `${left}px`;
+
+              wrapper.appendChild(el);
+              els.push(el);
+              break;
+            }
+          }
+        } else {
+          wrapper.appendChild(el);
+          els.push(el);
+        }
+      }
+    </script>
+  </body>
+</html>
