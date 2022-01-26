@@ -34,15 +34,8 @@
   <body>
     <div id="hidden"></div>
     <div id="wrapper"></div>
+    <!-- utils -->
     <script>
-      const words =
-        `Lorem ipsum dolor sit amet consectetur adipisicing elit. Facere, dolor sunt
-    aut nulla eos odio. Consectetur nemo optio vero sint.`.split(" ");
-      const frequency = Array(words.length)
-        .fill(10)
-        .map((el) => Math.random() * 100);
-
-      // utils
       const map = (val, cMin, cMax, tMin, tMax) => {
         const slope = (tMax - tMin) / (cMax - cMin);
         return tMin + slope * (val - cMin);
@@ -55,79 +48,112 @@
           rect1.bottom < rect2.top ||
           rect1.top > rect2.bottom
         );
+    </script>
 
-      const maxFontSize = 62;
-      const minFontSize = 18;
+    <!-- word cloud generator -->
+    <script>
+      /**
+       * @param {HTMLElement} target
+       * @param {{[key: string]: number}} data
+       * @param {{maxFontSize: number; minFontSize: number; spreadX: number; spreadY: number}} config
+       */
+      const generateWordCloud = (target, hidden, data, config) => {
+        target.innerHTML = "";
+        const { minFontSize, maxFontSize, spreadX, spreadY } = config;
 
-      const maxFrequency = Math.max(...frequency);
-      const minFrequency = Math.min(...frequency);
+        const words = Object.keys(data);
+        const frequencies = Object.values(data);
 
-      const els = [];
+        const maxFrequency = Math.max(...frequencies);
+        const minFrequency = Math.min(...frequencies);
 
-      const { width, height } = wrapper.getBoundingClientRect();
+        const { width, height } = target.getBoundingClientRect();
 
-      for (let i = 0; i < words.length; i++) {
-        const word = words[i];
-        const el = document.createElement("span");
-        el.innerText = word;
-        el.style.top = "50%";
-        el.style.left = "50%";
-        el.style.position = "absolute";
-        el.style.fontSize =
-          map(
-            frequency[i],
-            minFrequency,
-            maxFrequency,
-            minFontSize,
-            maxFontSize
-          ) + "px";
+        /** @type {HTMLSpanElement[]} */
+        const wordEls = [];
 
-        el.style.transform = `translate(-50%, -50%)`;
-        el.style.paddingInline = "4px";
+        for (const word of words) {
+          const frequency = data[word];
 
-        hidden.appendChild(el);
+          const wordEl = document.createElement("span");
+          wordEl.innerText = word;
+          wordEl.style.top = "50%";
+          wordEl.style.left = "50%";
+          wordEl.style.position = "absolute";
+          wordEl.style.fontSize =
+            map(
+              frequency,
+              minFrequency,
+              maxFrequency,
+              minFontSize,
+              maxFontSize
+            ) + "px";
 
-        if (els.length) {
-          let radius = 0;
-          for (let i = 0; i < 3_000; i++) {
-            const y = Math.sin(i);
-            const x = Math.cos(i) * 2;
-            const top = height / 2 + radius * y;
-            const left = width / 2 + radius * x;
+          wordEl.style.transform = `translate(-50%, -50%)`;
+          wordEl.style.paddingInline = "4px";
 
-            const p = document.createElement("p");
+          hidden.appendChild(wordEl);
 
-            el.style.top = `${top}px`;
-            el.style.left = `${left}px`;
-            const rect = el.getBoundingClientRect();
+          if (wordEls.length) {
+            let radius = 0;
+            for (let i = 0; i < 3_000; i += 0.5) {
+              const y = Math.sin(i) * spreadY;
+              const x = Math.cos(i) * spreadX;
+              const top = height / 2 + radius * y;
+              const left = width / 2 + radius * x;
 
-            p.style.top = top + "px";
-            p.style.left = left + "px";
-            p.style.position = "absolute";
-            // wrapper.appendChild(p);
-            radius += 1;
+              wordEl.style.top = `${top}px`;
+              wordEl.style.left = `${left}px`;
+              const rect = wordEl.getBoundingClientRect();
 
-            let overlapping = false;
-            for (const existingEl of els) {
-              const rect1 = existingEl.getBoundingClientRect();
+              radius += 1;
 
-              overlapping = isOverlapping(rect, rect1);
-              if (overlapping) break;
+              let overlapping = false;
+              for (const existingEl of wordEls) {
+                const rect1 = existingEl.getBoundingClientRect();
+
+                overlapping = isOverlapping(rect, rect1);
+                if (overlapping) break;
+              }
+              if (!overlapping) {
+                wordEl.style.top = `${top}px`;
+                wordEl.style.left = `${left}px`;
+
+                wrapper.appendChild(wordEl);
+                wordEls.push(wordEl);
+                break;
+              }
             }
-            if (!overlapping) {
-              el.style.top = `${top}px`;
-              el.style.left = `${left}px`;
-
-              wrapper.appendChild(el);
-              els.push(el);
-              break;
-            }
+          } else {
+            wrapper.appendChild(wordEl);
+            wordEls.push(wordEl);
           }
-        } else {
-          wrapper.appendChild(el);
-          els.push(el);
         }
-      }
+      };
+    </script>
+
+    <script>
+      const words =
+        `Lorem ipsum dolor sit amet consectetur adipisicing elit. Facere, dolor sunt
+    aut nulla eos odio. Consectetur nemo optio vero sint.`.split(" ");
+
+      generateWordCloud(
+        wrapper,
+        hidden,
+        Object.fromEntries(
+          new Map(
+            words
+              .filter(Boolean)
+              .map((word) => [word.trim(), Math.random() * 100])
+          )
+        ),
+        {
+          maxFontSize: 62,
+          minFontSize: 12,
+          spreadY: 1,
+          spreadX: 2,
+        }
+      );
     </script>
   </body>
 </html>
